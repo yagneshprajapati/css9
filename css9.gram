@@ -1,0 +1,133 @@
+%{
+#include <stdio.h>
+%}
+
+/* Tokens */
+%s BRACE_BLOCK
+%s PAREN_BLOCK
+%s MEDIA_BLOCK
+
+%option noyywrap
+
+%%
+
+/* Rules /
+%%
+/ Empty */
+;
+
+/* Import statements /
+import_stmt:
+IMPORT URL [MEDIA media_query]? ";" {
+/ Code to process the import statement */
+}
+;
+
+/* Selectors /
+selector:
+simple_selector [combinator simple_selector]
+;
+
+simple_selector:
+element_name [HASH | class | attribute | pseudo_class]* |
+[HASH | class | attribute | pseudo_class]+
+;
+
+element_name:
+IDENTIFIER
+;
+
+class:
+"." IDENTIFIER
+;
+
+attribute:
+"[" IDENTIFIER [ "=" | "~=" | "|=" ]? (IDENTIFIER | STRING) "]"
+;
+
+pseudo_class:
+":" IDENTIFIER
+;
+
+combinator:
+"+" | ">" | "~" | SP+
+;
+
+/* Declarations /
+property_list:
+LBRACE declaration RBRACE
+;
+
+declaration:
+property COLON value SEMICOLON
+;
+
+property:
+IDENTIFIER
+;
+
+value:
+[ element_name | HASH | class | attribute | pseudo_class | function | url_value | variable ]+ |
+property_list |
+/* Support for LESS nested selectors */
+BRACE_BLOCK selector property_list BRACE_BLOCK
+;
+
+function:
+IDENTIFIER "(" expr ")"
+;
+
+url_value:
+"url(" URL ")"
+;
+
+variable:
+"@" IDENTIFIER
+;
+
+expr:
+term [ operator term ]*
+;
+
+term:
+INTEGER | FLOAT | STRING | IDENTIFIER | variable
+;
+
+operator:
+"+" | "-" | "*" | "/"
+;
+
+/* Media queries /
+media_query:
+MEDIA media_type [AND media_feature]
+;
+
+media_type:
+"all" | "print" | "screen" | "speech" | IDENTIFIER
+;
+
+media_feature:
+"(" IDENTIFIER ":" value ")"
+;
+
+/* Rules for ignoring white space and comments /
+%%
+{SP}+ / ignore spaces /
+|{COMMENT} / ignore comments /
+|{PAREN_BLOCK} / ignore parentheses blocks /
+|{BRACE_BLOCK} / ignore brace blocks /
+|{MEDIA_BLOCK} / ignore media blocks */
+%%
+
+int main() {
+yylex();
+return 0;
+}
+
+int yywrap() {
+return 1;
+}
+
+void yyerror(const char *s) {
+fprintf(stderr, "Error: %s\n", s);
+}
